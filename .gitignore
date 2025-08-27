@@ -12,6 +12,9 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+# Ignore a specific large asset file
+Assets/Phony/Noto_Sans_JP/NotoSansJP-VariableFont_wght SDF.asset
+
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
 *.blend1
 *.blend1.meta
