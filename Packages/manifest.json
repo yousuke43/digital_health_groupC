@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.meta.xr.sdk.all": "77.0.0",
     "com.meta.xr.sdk.core": "66.0.0",
     "com.meta.xr.sdk.interaction.ovr": "66.0.0",
     "com.meta.xr.simulator": "62.0.0",
