@@ -1,69 +1,108 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
 
 public class MemoryOrbManager : MonoBehaviour
 {
-    // ƒXƒeƒbƒv1‚Åì¬‚µ‚½ƒI[ƒu‚ÌƒvƒŒƒnƒu
     public GameObject memoryOrbPrefab;
-
-    // ----- «‚±‚±‚©‚ç•ÏX« -----
-
-    // ƒvƒŒƒCƒ„[iVRƒJƒƒ‰j‚ÌTransform‚ğInspector‚©‚çİ’è
     public Transform playerTransform;
+    public float spawnRadius = 2.0f;
+    
+    public float fadeInDuration = 5.0f;
 
-    // ƒvƒŒƒCƒ„[‚©‚ç‚Ç‚Ì‚­‚ç‚¢—£‚ê‚½”ÍˆÍ‚ÉoŒ»‚³‚¹‚é‚©
-    public float spawnRadius = 2.0f; // —á:”¼Œa2ƒ[ƒgƒ‹
-
-    // ----- ª‚±‚±‚Ü‚Å•ÏXª -----
-
-
-    // ¶¬‚µ‚½ƒI[ƒu‚ğŠÇ—‚·‚é‚½‚ß‚ÌƒŠƒXƒg
     private List<GameObject> spawnedOrbs = new List<GameObject>();
-
-    // ƒeƒXƒg—p‚Ìv‚¢oƒ^ƒCƒgƒ‹ƒf[ƒ^
     private List<string> memoryTitles = new List<string>
     {
-        "‘·‚ÆŒö‰€‚És‚Á‚½“ú",
-        "‰‚ß‚Ä‚ÌƒXƒ}[ƒgƒtƒHƒ“",
-        "‹ßŠ‚Ì”L‚Æ‚Ìo‰ï‚¢",
-        "”ü–¡‚µ‚¢‚¨’ƒ‚ğˆù‚ñ‚¾ŒßŒã"
+        "å­«ã¨å…¬åœ’ã«è¡Œã£ãŸæ—¥",
+        "åˆã‚ã¦ã®ã‚¹ãƒãƒ¼ãƒˆãƒ•ã‚©ãƒ³",
+        "è¿‘æ‰€ã®çŒ«ã¨ã®å‡ºä¼šã„",
+        "ç¾å‘³ã—ã„ãŠèŒ¶ã‚’é£²ã‚“ã åˆå¾Œ"
     };
 
     public void ShowMemoryOrbs()
     {
         foreach (GameObject orb in spawnedOrbs)
         {
+            orb.transform.DOKill();
             Destroy(orb);
         }
         spawnedOrbs.Clear();
 
-        // ƒvƒŒƒCƒ„[‚ÌˆÊ’u‚ğŠî€“_‚Æ‚µ‚Äæ“¾
         Vector3 center = playerTransform.position;
+        Vector3 forward = playerTransform.forward;
+        Vector3 right = new Vector3(forward.z, 0, -forward.x);
 
-        for (int i = 0; i < memoryTitles.Count; i++)
+        int orbCount = Mathf.Min(memoryTitles.Count, 7);
+        if (orbCount <= 0) return;
+
+        float totalAngle = 180f;
+        float angleStep = (orbCount > 1) ? totalAngle / (orbCount - 1) : 0;
+        float startAngle = -totalAngle / 2;
+
+        for (int i = 0; i < orbCount; i++)
         {
-            // ----- «‚±‚±‚©‚ç•ÏX« -----
-
-            // ƒvƒŒƒCƒ„[‚Ìü‚è‚Ìƒ‰ƒ“ƒ_ƒ€‚ÈˆÊ’u‚ğŒvZ
-            // 1. ‚Ü‚¸XZ•½–Êi…•½•ûŒüj‚Åƒ‰ƒ“ƒ_ƒ€‚È“_‚ğŒˆ‚ß‚é
-            Vector2 randomCirclePos = Random.insideUnitCircle.normalized * spawnRadius;
+            float currentAngle = startAngle + (i * angleStep);
+            float radian = currentAngle * Mathf.Deg2Rad;
+            Vector3 offset = (right * Mathf.Sin(radian) + forward * Mathf.Cos(radian)) * spawnRadius;
             
-            // 2. Y²i‚‚³j‚ğƒvƒŒƒCƒ„[‚Ì–Úü‚ ‚½‚è‚Åƒ‰ƒ“ƒ_ƒ€‚ÉŒˆ‚ß‚é
-            float randomHeight = Random.Range(-0.5f, 1.5f); // –Úü‚Ì­‚µ‰º‚©‚ç­‚µã‚Ü‚Å
+            // â—† æœ€çµ‚åœ°ç‚¹ã®ã¿ã‚’è¨ˆç®—
+            Vector3 targetPosition = center + offset;
 
-            // 3. ÅI“I‚ÈoŒ»ˆÊ’u‚ğŒˆ’è
-            Vector3 spawnPosition = center + new Vector3(randomCirclePos.x, randomHeight, randomCirclePos.y);
+            Vector3 lookDirection = center - targetPosition;
+            lookDirection.y = 0;
+            Quaternion spawnRotation = Quaternion.LookRotation(lookDirection);
 
-            // ----- ª‚±‚±‚Ü‚Å•ÏXª -----
-
-
-            // ƒvƒŒƒnƒu‚©‚çƒI[ƒu‚ğ¶¬ (Quaternion.identity‚Í‰ñ“]‚³‚¹‚È‚¢‚Æ‚¢‚¤ˆÓ–¡)
-            GameObject newOrb = Instantiate(memoryOrbPrefab, spawnPosition, Quaternion.identity);
+            // â—† ã‚ªãƒ¼ãƒ–ã‚’ã€Œæœ€çµ‚åœ°ç‚¹ã€ã«ç›´æ¥ç”Ÿæˆã™ã‚‹
+            GameObject newOrb = Instantiate(memoryOrbPrefab, targetPosition, spawnRotation);
             
+            // â—† ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³é–¢æ•°ã‚’å‘¼ã³å‡ºã™ï¼ˆå¼•æ•°ã¯orbã®ã¿ï¼‰
+            AnimateOrbIn(newOrb);
+
             newOrb.GetComponent<MemoryOrbController>().SetTitle(memoryTitles[i]);
-
             spawnedOrbs.Add(newOrb);
+        }
+    }
+
+    /// <summary>
+    /// DOTweenã‚’ä½¿ã£ã¦ã‚ªãƒ¼ãƒ–ã‚’ãã®å ´ã§ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³ã•ã›ã‚‹é–¢æ•°
+    /// </summary>
+    private void AnimateOrbIn(GameObject orb) // å¼•æ•°ã‹ã‚‰endPosã‚’å‰Šé™¤
+    {
+        Renderer orbRenderer = orb.GetComponentInChildren<Renderer>();
+        TextMeshPro textMesh = orb.GetComponentInChildren<TextMeshPro>();
+
+        if (orbRenderer == null && textMesh == null) return;
+
+        // --- åˆæœŸçŠ¶æ…‹ã®è¨­å®š ---
+        if (orbRenderer != null)
+        {
+            Color startOrbColor = orbRenderer.material.color;
+            startOrbColor.a = 0;
+            orbRenderer.material.color = startOrbColor;
+        }
+        if (textMesh != null)
+        {
+            Color startTextColor = textMesh.color;
+            startTextColor.a = 0;
+            textMesh.color = startTextColor;
+        }
+
+        // --- DOTweenã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³å®šç¾© ---
+        
+        // â˜…â˜…â˜… ç§»å‹•ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³(DOMove)ã‚’å‰Šé™¤ â˜…â˜…â˜…
+
+        // ãƒ•ã‚§ãƒ¼ãƒ‰ã‚¤ãƒ³ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³
+        if (orbRenderer != null)
+        {
+            orbRenderer.material.DOFade(1f, fadeInDuration)
+                .SetEase(Ease.OutCubic);
+        }
+        if (textMesh != null)
+        {
+            textMesh.DOFade(1f, fadeInDuration)
+                .SetEase(Ease.OutCubic);
         }
     }
 }
