@@ -8,7 +8,7 @@ using System;
 [RequireComponent(typeof(AudioSource))]
 public class VoiceStreamerVAD : MonoBehaviour
 {
-    private string serverUrl = "ws://localhost:8000/ws/transcribe";
+    private string serverUrl = "ws://10.24.195.76:8000/ws/transcribe";
     private WebSocket websocket;
 
     // ★★★★★ 録音開始までの待機時間（秒）★★★★★
