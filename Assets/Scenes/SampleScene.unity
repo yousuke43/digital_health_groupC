@@ -792,8 +792,8 @@ Transform:
   m_GameObject: {fileID: 568528953}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -0.88621384, y: 0.24927115, z: 0.7357901}
-  m_LocalScale: {x: -1.0718971, y: 0.49999988, z: 0.09999995}
+  m_LocalPosition: {x: -0.88621384, y: 0.24927115, z: 0.9498416}
+  m_LocalScale: {x: 1.5, y: 0.49999988, z: 0.09999995}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1693866382}
@@ -2165,6 +2165,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1101594101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1101594090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0df97c57af7310840b889d43776d5cd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerCameraTransform: {fileID: 897529992}
+  rotationSpeed: 2
+  turnAnimationThreshold: 5
 --- !u!1 &1171176986
 GameObject:
   m_ObjectHideFlags: 0
@@ -2823,7 +2838,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1293718049}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8ff3d6159be4e004f8ae25b5fcf864bb, type: 3}
   m_Name: 
@@ -3363,6 +3378,11 @@ PrefabInstance:
       propertyPath: m_AABB.m_Extent.z
       value: 0.14448954
       objectReference: {fileID: 0}
+    - target: {fileID: 4870552773557632513, guid: 70285fe82f483344ebc4ec7e3cd602bb,
+        type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: d48c756e928d5fb428f0bfb3329a6234, type: 2}
     - target: {fileID: 5159078012444724336, guid: 70285fe82f483344ebc4ec7e3cd602bb,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -3460,6 +3480,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1101594095}
+    - targetCorrespondingSourceObject: {fileID: -1728013695380148634, guid: 70285fe82f483344ebc4ec7e3cd602bb,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1101594101}
   m_SourcePrefab: {fileID: -3956505258223990651, guid: 70285fe82f483344ebc4ec7e3cd602bb,
     type: 3}
 --- !u!1 &1838930463
