@@ -13,47 +13,50 @@ public class LookAtPlayer : MonoBehaviour
     public float turnAnimationThreshold = 5.0f; // 5度
 
     private Animator animator;
+    private Rigidbody rb; // Rigidbodyを格納する変数を追加
 
     void Start()
     {
-        // Animatorコンポーネントを取得
+        // 各コンポーネントを取得
         animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>(); // Rigidbodyコンポーネントを取得
     }
 
-    void Update()
+    // 物理演算の更新はFixedUpdateで行う
+    void FixedUpdate()
     {
         if (playerCameraTransform == null || animator == null)
         {
-            return; // ターゲットかAnimatorがなければ何もしない
+            return;
         }
 
         // --- キャラクターの回転処理 ---
 
-        // プレイヤーの方向を計算（キャラクターが上下に傾かないように高さを合わせる）
+        // プレイヤーの方向を計算（Y軸は無視）
         Vector3 lookDirection = playerCameraTransform.position - transform.position;
         lookDirection.y = 0;
+
+        if (lookDirection == Vector3.zero) return; // 方向がゼロベクトルなら何もしない
 
         // 指定した方向を向くための回転値を計算
         Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
 
-        // 現在の角度からターゲットの角度まで、滑らかに回転させる
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+        // Rigidbodyを使って滑らかに回転させる
+        Quaternion newRotation = Quaternion.Slerp(rb.rotation, targetRotation, Time.fixedDeltaTime * rotationSpeed);
+        rb.MoveRotation(newRotation); // ★★★ 変更点 ★★★
 
-
-        // --- アニメーション制御 ---
+        // --- アニメーション制御 (この処理はUpdateでもFixedUpdateでもOK) ---
 
         // キャラクターの正面方向と、プレイヤーの方向との間の角度を計算
-        float angleDifference = Vector3.Angle(transform.forward, lookDirection);
+        float angleDifference = Vector3.Angle(transform.forward, lookDirection.normalized);
 
         // 角度の差がしきい値より大きい場合、「回転中」と判断する
         if (angleDifference > turnAnimationThreshold)
         {
-            // 回転中ならIsTurningをtrueにして歩きモーションを再生
             animator.SetBool("IsTurning", true);
         }
         else
         {
-            // 回転が終わったらIsTurningをfalseにして待機モーションに戻す
             animator.SetBool("IsTurning", false);
         }
     }
