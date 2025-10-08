@@ -824,7 +824,7 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: ISDK_OPENXR_HAND;DOTWEEN
+    Android: ISDK_OPENXR_HAND;DOTWEEN;USE_VRM10;USE_VRM0X
     EmbeddedLinux: DOTWEEN
     GameCoreScarlett: DOTWEEN
     GameCoreXboxOne: DOTWEEN

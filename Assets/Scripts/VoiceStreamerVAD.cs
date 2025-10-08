@@ -1,19 +1,34 @@
-// VoiceStreamerVAD.cs (トグルボタン対応・整形済み完成版)
+// VoiceStreamerVAD.cs (本番用: トグル接続、会話ログ表示、接続断でログ消去)
 
 using UnityEngine;
 using NativeWebSocket;
 using System.Collections;
 using System;
 using System.Linq;
-using TMPro; // ボタンのテキストを変えるため追加
+using TMPro;
+
+// JSONデータをパースするためのクラス定義
+[System.Serializable]
+public class MessageData
+{
+    public string type;
+    public string text;
+}
 
 [RequireComponent(typeof(AudioSource))]
 public class VoiceStreamerVAD : MonoBehaviour
 {
-    // --- 変数の定義 ---
+    [Header("Connection Settings")]
     private string serverUrl = "ws://10.24.195.76:8000/ws/transcribe";
-    private WebSocket websocket;
     public float startDelay = 0.5f;
+
+    [Header("UI Settings")]
+    public TextMeshProUGUI buttonText;
+    public GameObject logEntryPrefab;
+    public Transform logContentParent;
+
+    // --- Private Variables ---
+    private WebSocket websocket;
     private const int SAMPLING_RATE = 16000;
     private const int CHUNK_LENGTH_MS = 32;
 
@@ -23,15 +38,20 @@ public class VoiceStreamerVAD : MonoBehaviour
     private int lastPosition = 0;
     private Coroutine streamingCoroutine;
 
-    [Header("UI Settings")]
-    public TextMeshProUGUI buttonText; // ボタンのテキストコンポーネント
 
     void Start()
     {
+        
+        if (logContentParent != null)
+        {
+            logContentParent.gameObject.SetActive(false);
+        }
+
         audioSource = GetComponent<AudioSource>();
         if (Microphone.devices.Length == 0)
         {
             Debug.LogError("マイクが見つかりません！");
+            if (buttonText != null) buttonText.text = "マイクエラー";
             return;
         }
         microphoneDevice = Microphone.devices[0];
@@ -39,15 +59,13 @@ public class VoiceStreamerVAD : MonoBehaviour
         UpdateButtonText(false);
     }
 
-    /// <summary>
-    /// 接続と切断を切り替えるトグルメソッド (ボタンから呼び出す)
-    /// </summary>
+    // ★★★ 元のトグル機能に戻す ★★★
     public void ToggleConnection()
     {
-        bool isConnectedOrConnecting = (websocket != null && 
-                                       (websocket.State == WebSocketState.Open || 
+        bool isConnectedOrConnecting = (websocket != null &&
+                                       (websocket.State == WebSocketState.Open ||
                                         websocket.State == WebSocketState.Connecting));
-        
+
         if (isConnectedOrConnecting)
         {
             StopConnectionAsync();
@@ -58,8 +76,32 @@ public class VoiceStreamerVAD : MonoBehaviour
         }
     }
 
+    private void HandleTextMessage(string messageString)
+    {
+        try
+        {
+            MessageData data = JsonUtility.FromJson<MessageData>(messageString);
+
+            if (data.type == "user_transcription")
+            {
+                UnityMainThreadDispatcher.Instance().Enqueue(() => LogUserMessage(data.text));
+            }
+            else if (data.type == "ai_response")
+            {
+                UnityMainThreadDispatcher.Instance().Enqueue(() => LogAiMessage(data.text));
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("JSONの解析に失敗しました: " + e.Message + "\n" + messageString);
+        }
+    }
+
+
     private async void StartConnectionAsync()
     {
+        ClearLog();
+
         Debug.Log("サーバーへの接続を開始します...");
         UpdateButtonText(true);
         websocket = new WebSocket(serverUrl);
@@ -70,13 +112,13 @@ public class VoiceStreamerVAD : MonoBehaviour
             StartCoroutine(DelayedStartStreaming(startDelay));
         };
 
-        websocket.OnError += (e) => 
+        websocket.OnError += (e) =>
         {
             Debug.LogError("エラー: " + e);
             UpdateButtonText(false);
         };
-        
-        websocket.OnClose += (e) => 
+
+        websocket.OnClose += (e) =>
         {
             Debug.Log("サーバーから切断されました。");
             UnityMainThreadDispatcher.Instance().Enqueue(StopRecordingAndStreaming);
@@ -92,17 +134,20 @@ public class VoiceStreamerVAD : MonoBehaviour
             }
             else
             {
-                var message = System.Text.Encoding.UTF8.GetString(bytes);
-                Debug.Log("テキスト応答: " + message);
+                var messageString = System.Text.Encoding.UTF8.GetString(bytes);
+                Debug.Log("テキスト応答 (JSON): " + messageString);
+                HandleTextMessage(messageString);
             }
         };
 
         await websocket.Connect();
     }
-    
+
     private async void StopConnectionAsync()
     {
+        ClearLog();
         StopRecordingAndStreaming();
+
         if (websocket != null && websocket.State == WebSocketState.Open)
         {
             Debug.Log("サーバーから切断します。");
@@ -111,11 +156,46 @@ public class VoiceStreamerVAD : MonoBehaviour
         websocket = null;
     }
 
+    public void LogUserMessage(string message)
+    {
+        AddLogEntry("あなた: " + message, new Color(0.8f, 1f, 0.8f));
+    }
+
+    public void LogAiMessage(string message)
+    {
+        AddLogEntry("相手: " + message, Color.white);
+    }
+
+    private void AddLogEntry(string message, Color textColor)
+    {
+        if (logEntryPrefab == null || logContentParent == null) return;
+        GameObject newLogObject = Instantiate(logEntryPrefab, logContentParent);
+        var logText = newLogObject.GetComponent<TextMeshProUGUI>();
+        if (logText != null)
+        {
+            logText.text = message;
+            logText.color = textColor;
+        }
+    }
+
+    private void ClearLog()
+    {
+        if (logContentParent == null) return;
+        foreach (Transform child in logContentParent)
+        {
+            Destroy(child.gameObject);
+        }
+    }
+
     private void UpdateButtonText(bool isConnecting)
     {
         if (buttonText != null)
         {
-            buttonText.text = isConnecting ? "stop" : "talk";
+            buttonText.text = isConnecting ? "停止する" : "話す";
+        }
+        if (logContentParent != null)
+        {
+        logContentParent.gameObject.SetActive(isConnecting);
         }
     }
 
@@ -169,12 +249,11 @@ public class VoiceStreamerVAD : MonoBehaviour
         yield return new WaitForSeconds(delay);
         StartRecordingAndStreaming();
     }
-    
+
     private void StartRecordingAndStreaming()
     {
         if (Microphone.IsRecording(microphoneDevice) || streamingCoroutine != null)
         {
-            Debug.LogWarning("すでに録音・ストリーミングが実行中のため、開始処理をスキップしました。");
             return;
         }
         Debug.Log("録音とストリーミングを開始します。");
@@ -205,12 +284,18 @@ public class VoiceStreamerVAD : MonoBehaviour
         while (websocket != null && websocket.State == WebSocketState.Open)
         {
             int currentPosition = Microphone.GetPosition(microphoneDevice);
-            if (currentPosition < lastPosition) { lastPosition = 0; }
+            if (currentPosition < lastPosition)
+            {
+                lastPosition = 0;
+            }
             if (currentPosition - lastPosition >= chunkSize)
             {
                 microphoneClip.GetData(chunk, lastPosition);
                 byte[] bytes = ConvertFloatToInt16Bytes(chunk);
-                if (websocket.State == WebSocketState.Open) { websocket.Send(bytes); }
+                if (websocket.State == WebSocketState.Open)
+                {
+                    websocket.Send(bytes);
+                }
                 lastPosition += chunkSize;
             }
             yield return null;
@@ -231,7 +316,7 @@ public class VoiceStreamerVAD : MonoBehaviour
         return bytes;
     }
 
-    async void OnApplicationQuit()
+    void OnApplicationQuit()
     {
         StopConnectionAsync();
     }
