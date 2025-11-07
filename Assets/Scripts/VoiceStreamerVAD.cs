@@ -1,6 +1,7 @@
 // VoiceStreamerVAD.cs (本番用: トグル接続、会話ログ表示、接続断でログ消去)
 
 using UnityEngine;
+using UnityEngine.UI; // ★★★ これを追加 ★★★
 using NativeWebSocket;
 using System.Collections;
 using System;
@@ -26,6 +27,7 @@ public class VoiceStreamerVAD : MonoBehaviour
     public TextMeshProUGUI buttonText;
     public GameObject logEntryPrefab;
     public Transform logContentParent;
+    public ScrollRect logScrollRect; // ★★★ これを追加 ★★★
 
     // --- Private Variables ---
     private WebSocket websocket;
@@ -175,6 +177,21 @@ public class VoiceStreamerVAD : MonoBehaviour
         {
             logText.text = message;
             logText.color = textColor;
+        }
+
+        StartCoroutine(ScrollToBottomNextFrame());
+    }
+
+    private IEnumerator ScrollToBottomNextFrame()
+    {
+        // レイアウトグループがContentの高さを更新するのを1フレーム待つ
+        yield return null; 
+
+        // 次のフレームでスクロールバーの位置を一番下(0)にする
+        if (logScrollRect != null)
+        {
+            // verticalNormalizedPosition は 1 が一番上、0 が一番下です
+            logScrollRect.verticalNormalizedPosition = 0f;
         }
     }
 
